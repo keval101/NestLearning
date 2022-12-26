@@ -31,6 +31,7 @@ export class AuthService {
         //   email: true,
         // },
       });
+      delete user.hash;
       return user;
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -41,6 +42,7 @@ export class AuthService {
       throw error;
     }
   }
+
   async signin(dto: AuthDto) {
     //find the user by email
     const user = await this.prisma.user.findUnique({
@@ -61,18 +63,21 @@ export class AuthService {
     return this.signToken(user.id, user.email);
   }
 
-  signToken(userId: number, email: string): Promise<string> {
+  async signToken(
+    userId: number,
+    email: string,
+  ): Promise<{ access_token: string }> {
     const payload = {
-      sub: userId,
+      userId: userId,
       email,
     };
 
     const secret = this.config.get('JWT_SECRET');
-    const token = this.jwt.signAsync(payload, {
+    const token = await this.jwt.signAsync(payload, {
       expiresIn: '15m',
       secret: secret,
     });
 
-    return token;
+    return { access_token: token };
   }
 }
